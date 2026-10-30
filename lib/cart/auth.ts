@@ -1,3 +1,4 @@
+// lib\cart\auth.ts
 import { createHash } from "crypto";
 import { cookies } from "next/headers";
 import { prisma } from "../prisma";

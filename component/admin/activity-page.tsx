@@ -1,3 +1,4 @@
+// component\admin\activity-page.tsx
 "use client";
 
 import { useMemo, useState } from "react";

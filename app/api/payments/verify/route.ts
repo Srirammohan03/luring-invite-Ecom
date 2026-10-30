@@ -1,3 +1,4 @@
+// app\api\payments\verify\route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";

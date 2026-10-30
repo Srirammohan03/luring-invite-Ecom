@@ -96,17 +96,18 @@ model MusicTrack {
 }
 
 model VideoJob {
-  id         String         @id @default(cuid())
-  templateId Int
-  status     VideoJobStatus @default(PENDING)
-  input      Json
-  outputPath String?
-  finalPath  String?
-  error      String?        @db.Text
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  template   Template       @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  purchases  VideoPurchase[]
+  id               String            @id @default(cuid())
+  templateId       Int
+  status           VideoJobStatus    @default(PENDING)
+  input            Json
+  outputPath       String?
+  finalPath        String?
+  error            String?           @db.Text
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  template         Template          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  purchases        VideoPurchase[]
+  checkoutSessions CheckoutSession[]
 
   @@index([templateId, createdAt])
   @@index([status, createdAt])
@@ -224,35 +225,36 @@ model CartUser {
 }
 
 model Order {
-  id            String             @id @default(cuid())
-  orderNumber   String             @unique @default(cuid())
-  userId        String?
-  cartId        String?
-  customerEmail String
-  customerName  String?
-  customerPhone String?
-  customerId    String?
+  id                   String             @id @default(cuid())
+  orderNumber          String             @unique @default(cuid())
+  userId               String?
+  cartId               String?
+  customerEmail        String
+  customerName         String?
+  customerPhone        String?
+  customerId           String?
   guestAccessTokenHash String?
-  currency      String             @default("INR")
-  subtotal      Decimal            @default(0) @db.Decimal(10, 2)
-  discount      Decimal            @default(0) @db.Decimal(10, 2)
-  tax           Decimal            @default(0) @db.Decimal(10, 2)
-  razorpayOrderId   String?        @unique
-  razorpayPaymentId String?        @unique
-  failureReason     String?        @db.Text
-  paidAt            DateTime?
-  status        OrderStatus        @default(PENDING)
-  paymentStatus OrderPaymentStatus @default(PENDING)
-  total         Decimal            @db.Decimal(10, 2)
-  items         OrderItem[]
-  user          CartUser?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  customer      Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  cart          Cart?              @relation(fields: [cartId], references: [id], onDelete: SetNull)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  payments      Payment[]
-  videoPurchases VideoPurchase[]
-  webhookEvents PaymentWebhook[]
+  currency             String             @default("INR")
+  subtotal             Decimal            @default(0) @db.Decimal(10, 2)
+  discount             Decimal            @default(0) @db.Decimal(10, 2)
+  tax                  Decimal            @default(0) @db.Decimal(10, 2)
+  razorpayOrderId      String?            @unique
+  razorpayPaymentId    String?            @unique
+  failureReason        String?            @db.Text
+  paidAt               DateTime?
+  status               OrderStatus        @default(PENDING)
+  paymentStatus        OrderPaymentStatus @default(PENDING)
+  total                Decimal            @db.Decimal(10, 2)
+  items                OrderItem[]
+  user                 CartUser?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customer             Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cart                 Cart?              @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  payments             Payment[]
+  videoPurchases       VideoPurchase[]
+  webhookEvents        PaymentWebhook[]
+  checkoutSession      CheckoutSession?
 
   @@index([userId, createdAt])
   @@index([cartId])
@@ -269,6 +271,8 @@ model CheckoutSession {
   userId         String?
   guestId        String?
   customerEmail  String?
+  videoJobId     String?
+  orderId        String?        @unique
   status         CheckoutStatus @default(STARTED)
   lastActivityAt DateTime       @default(now())
   createdAt      DateTime       @default(now())
@@ -277,11 +281,15 @@ model CheckoutSession {
   cart Cart?     @relation(fields: [cartId], references: [id], onDelete: SetNull)
   user CartUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  videoJob VideoJob? @relation(fields: [videoJobId], references: [id], onDelete: SetNull)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
   @@index([status, lastActivityAt])
   @@index([userId, createdAt])
   @@index([cartId])
   @@index([guestId])
   @@index([customerEmail])
+  @@index([videoJobId])
 }
 
 model OrderItem {
@@ -302,10 +310,10 @@ model OrderItem {
 }
 
 model Customer {
-  id             String   @id @default(cuid())
-  userId         String?  @unique
+  id             String    @id @default(cuid())
+  userId         String?   @unique
   fullName       String
-  email          String   @unique
+  email          String    @unique
   primaryPhone   String
   alternatePhone String?
   address        String
@@ -316,29 +324,29 @@ model Customer {
   companyName    String?
   user           CartUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
   orders         Order[]
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([primaryPhone])
   @@index([createdAt])
 }
 
 model Payment {
-  id                 String             @id @default(cuid())
-  orderId            String
-  razorpayOrderId    String             @unique
-  razorpayPaymentId  String?            @unique
-  amount             Decimal            @db.Decimal(10, 2)
-  currency           String             @default("INR")
-  status             OrderPaymentStatus @default(PENDING)
-  method             String?
-  signatureVerified  Boolean            @default(false)
-  failureReason      String?            @db.Text
-  providerPayload    Json?
-  paidAt             DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  order              Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                String             @id @default(cuid())
+  orderId           String
+  razorpayOrderId   String             @unique
+  razorpayPaymentId String?            @unique
+  amount            Decimal            @db.Decimal(10, 2)
+  currency          String             @default("INR")
+  status            OrderPaymentStatus @default(PENDING)
+  method            String?
+  signatureVerified Boolean            @default(false)
+  failureReason     String?            @db.Text
+  providerPayload   Json?
+  paidAt            DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  order             Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId, createdAt])
   @@index([status, createdAt])

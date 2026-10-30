@@ -1,3 +1,4 @@
+// app\(dashboard)\checkout\success\page.tsx
 "use client";
 import Link from "next/link";
 import { useEffect } from "react";
